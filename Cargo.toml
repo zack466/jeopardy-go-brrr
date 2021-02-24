@@ -1,8 +1,9 @@
 [package]
 name = "brrr"
 version = "0.1.0"
-authors = ["runner"]
+authors = ["zack466"]
 edition = "2018"
+default-run = "main"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -10,3 +11,12 @@ edition = "2018"
 curl = "0.4.34"
 lazy_static = "1.4.0"
 regex = "1"
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
+
+[[bin]]
+name = "console"
+path = "src/console.rs"
+

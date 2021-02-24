@@ -1,4 +1,3 @@
-use std::io::{stdout, Write};
 use curl::easy::Easy;
 use regex::Regex;
 
@@ -43,6 +42,7 @@ lazy_static! {
     static ref RE_ANSWER_D: Regex = Regex::new(r#"clue_DJ_(\d)_(\d).+correct_response\&quot;\&gt;(.+)\&lt;/em"#).unwrap();
 }
 
+//TODO: move all HTML cleaning into a single function
 fn clean_html(data: String) -> String {
     return data;
 }
@@ -71,9 +71,7 @@ impl JeopardyQuestion {
     }
 }
 
-//TODO: move all HTML cleaning into a single function
-
-fn populate_board(data: &String, board: &mut Vec<Vec<JeopardyQuestion>>, double: bool) {
+fn populate_board(data: &String, board: &mut Board, double: bool) {
     // parse Jeopardy clues
     let re_clue: &Regex = if !double {&RE_CLUE} else {&RE_CLUE_D};
     for caps in re_clue.captures_iter(&data[..]) {
@@ -106,31 +104,46 @@ fn populate_board(data: &String, board: &mut Vec<Vec<JeopardyQuestion>>, double:
     }
 }
 
-fn main() {
-    let data = get_webpage(6000);
-
-    let mut board_1 = vec![vec![JeopardyQuestion::default(); 6]; 5];
-    let mut board_2 = vec![vec![JeopardyQuestion::default(); 6]; 5];
-
-    // parse categories
-    let mut categories = Vec::<String>::new();
+fn populate_categories(data: &String, categories: &mut Vec<Category>) {
     for caps in RE_CATEGORY.captures_iter(&data[..]) {
         categories.push(caps.get(1).unwrap().as_str().to_string());
     }
+}
 
+fn print_board(board: &Board) {
+    for row in board {
+        for jq in row {
+            println!("{:?}", jq);
+        }
+    }
+}
+
+type Category = String;
+type Board = Vec<Vec<JeopardyQuestion>>;
+
+// TODO: parse final jeopardy
+
+fn get_game_data(game_id: usize) -> (Vec<Category>, Board, Board) {
+    let data = get_webpage(game_id);
+
+    let mut board_1: Board = vec![vec![JeopardyQuestion::default(); 6]; 5];
+    let mut board_2: Board = vec![vec![JeopardyQuestion::default(); 6]; 5];
+    let mut categories = Vec::<Category>::new();
+
+    populate_categories(&data, &mut categories);
     populate_board(&data, &mut board_1, false);
     populate_board(&data, &mut board_2, true);
 
-    for row in &mut board_1 {
-        for jq in row {
-            println!("{:?}", jq);
-        }
+    return (categories, board_1, board_2);
+}
+
+fn main() {
+    let (categories, board_1, board_2) = get_game_data(6000);
+    for c in categories {
+        println!("{}", c);
     }
-    for row in &mut board_2 {
-        for jq in row {
-            println!("{:?}", jq);
-        }
-    }
+    print_board(&board_1);
+    print_board(&board_2);
 
     // println!("{}", board_1[0][0]);
     // println!("{}", handle.response_code().unwrap());

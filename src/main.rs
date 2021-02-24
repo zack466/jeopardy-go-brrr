@@ -4,11 +4,30 @@ use regex::Regex;
 #[macro_use]
 extern crate lazy_static;
 
+lazy_static! {
+    static ref RE_HTML: Regex =
+        Regex::new(r#"(?:<(i|u|b)>|</(i|u|b)>|\&lt;(i|u|b)\&gt;|\&lt;/(i|u|b)\&gt;)"#).unwrap();
+    static ref RE_CATEGORY: Regex = Regex::new(r#"<td class="category_name">(.+)</td>"#).unwrap();
+    static ref RE_CLUE: Regex =
+        Regex::new(r#"id="clue_J_(\d)_(\d)" class="clue_text">(.+)</td>"#).unwrap();
+    static ref RE_ANSWER: Regex =
+        Regex::new(r#"clue_J_(\d)_(\d).+correct_response\&quot;\&gt;(.+)\&lt;/em"#).unwrap();
+    static ref RE_CLUE_D: Regex =
+        Regex::new(r#"id="clue_DJ_(\d)_(\d)" class="clue_text">(.+)</td>"#).unwrap();
+    static ref RE_ANSWER_D: Regex =
+        Regex::new(r#"clue_DJ_(\d)_(\d).+correct_response\&quot;\&gt;(.+)\&lt;/em"#).unwrap();
+    static ref RE_FINAL_CLUE: Regex =
+        Regex::new(r#"id="clue_FJ" class="clue_text">(.+)</td>"#).unwrap();
+    static ref RE_FINAL_ANSWER: Regex =
+        Regex::new(r#"quot;correct_response\\&quot;\&gt;(.+)\&lt;/em"#).unwrap();
+}
+
 fn gen_url(game_id: usize) -> String {
     let base_url = "https://www.j-archive.com/showgame.php";
     format!("{}?game_id={}", base_url, game_id.to_string())
 }
 
+// TODO: fails if game not found
 fn get_webpage(game_id: usize) -> String {
     let mut handle = Easy::new();
     let url = gen_url(game_id);
@@ -35,44 +54,23 @@ fn get_webpage(game_id: usize) -> String {
     return s.to_owned();
 }
 
-lazy_static! {
-    static ref RE_HTML: Regex =
-        Regex::new(r#"(?:<(i|u|b)>|</(i|u|b)>|\&lt;(i|u|b)\&gt;|\&lt;/(i|u|b)\&gt;)"#).unwrap();
-    static ref RE_CATEGORY: Regex = Regex::new(r#"<td class="category_name">(.+)</td>"#).unwrap();
-    static ref RE_CLUE: Regex =
-        Regex::new(r#"id="clue_J_(\d)_(\d)" class="clue_text">(.+)</td>"#).unwrap();
-    static ref RE_ANSWER: Regex =
-        Regex::new(r#"clue_J_(\d)_(\d).+correct_response\&quot;\&gt;(.+)\&lt;/em"#).unwrap();
-    static ref RE_CLUE_D: Regex =
-        Regex::new(r#"id="clue_DJ_(\d)_(\d)" class="clue_text">(.+)</td>"#).unwrap();
-    static ref RE_ANSWER_D: Regex =
-        Regex::new(r#"clue_DJ_(\d)_(\d).+correct_response\&quot;\&gt;(.+)\&lt;/em"#).unwrap();
-    static ref RE_FINAL_CLUE: Regex =
-        Regex::new(r#"id="clue_FJ" class="clue_text">(.+)</td>"#).unwrap();
-    static ref RE_FINAL_ANSWER: Regex =
-        Regex::new(r#"quot;correct_response\\&quot;\&gt;(.+)\&lt;/em"#).unwrap();
-}
-
 #[derive(Default, Clone, Debug)]
 struct JeopardyQuestion {
     clue: String,
     answer: String,
     x: usize,     // num category from left to right
     y: usize,     // num question going down
-    double: bool, // second round is doubled
+    value: usize,
 }
 
 impl JeopardyQuestion {
-    fn value(&self) -> usize {
-        return (self.y + 1) * 200 * if self.double { 2 } else { 1 };
-    }
     fn default() -> JeopardyQuestion {
         JeopardyQuestion {
             clue: String::new(),
             answer: String::new(),
             x: 0,
             y: 0,
-            double: false,
+            value: 0,
         }
     }
 }
@@ -97,8 +95,9 @@ fn populate_board(data: &String, board: &mut Board, double: bool) {
         board[y][x].x = x;
         board[y][x].y = y;
         board[y][x].clue.push_str(&clue);
+        board[y][x].value = (y + 1) * 200;
         if double {
-            board[y][x].double = true;
+            board[y][x].value *= 2;
         }
     }
 
@@ -169,8 +168,13 @@ fn get_game_data(game_id: usize) -> (Vec<Category>, Board, Board, JeopardyQuesti
     return (categories, board_1, board_2, final_jeopardy);
 }
 
+// TODO: move all this logic into lib.rs
+// TODO: refactor for error handling
+// TODO: add ability to cache j-archive pages, maybe just try and download every webpage
+// TODO: ability to serialize data as JSON/database or some other format
+// TODO: add ability to load from a local copy of webpage, a database, or cache
 fn main() {
-    let (categories, board_1, board_2, final_jeopardy) = get_game_data(6000);
+    let (categories, board_1, board_2, final_jeopardy) = get_game_data(7000);
     for c in categories {
         println!("{}", c);
     }

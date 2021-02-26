@@ -3,7 +3,6 @@ name = "brrr"
 version = "0.1.0"
 authors = ["zack466"]
 edition = "2018"
-default-run = "main"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,12 +10,8 @@ default-run = "main"
 curl = "0.4.34"
 lazy_static = "1.4.0"
 regex = "1"
-
-[[bin]]
-name = "main"
-path = "src/main.rs"
+crossterm = "0.18"
+tui = { version = "0.14", default-features = false, features = ['crossterm'] }
 
 [[bin]]
 name = "console"
-path = "src/console.rs"
-

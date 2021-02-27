@@ -98,12 +98,20 @@ impl JeopardyQuestion {
     pub fn value(&self) -> usize {
         return self.value;
     }
+    pub fn clue(&self) -> &str {
+        return &self.clue[..];
+    }
+    pub fn answer(&self) -> &str {
+        return &self.answer[..];
+    }
 }
 
 fn clean_html(data: String) -> String {
     let data = RE_HTML.replace_all(&data[..], "");
     let data = data.replace("&amp;", "&");
     let data = data.replace("<br />", "");
+    let data = data.replace("\\'", "'");
+    let data = data.replace("\\\"", "\"");
     return data;
 }
 
@@ -141,7 +149,9 @@ fn populate_board(data: &String, board: &mut Board, double: bool) {
 
 fn populate_categories(data: &String, categories: &mut Vec<Category>) {
     for caps in RE_CATEGORY.captures_iter(&data[..]) {
-        categories.push(caps.get(1).unwrap().as_str().to_string());
+        let category = caps.get(1).unwrap().as_str().to_string();
+        let category = clean_html(category);
+        categories.push(category);
     }
 }
 
@@ -179,14 +189,14 @@ pub fn get_game_data(game_id: usize) -> Option<Game> {
     let url = gen_url(game_id);
     let data = match cache_read(&url) {
         Some(data) => {
-            println!("Loading {} from cache...", game_id);
+            // println!("Loading {} from cache...", game_id);
             data
         },
         None => {
             // respectful web scraping etiquette
-            std::thread::sleep(std::time::Duration::from_secs(20));
+            // std::thread::sleep(std::time::Duration::from_secs(20));
 
-            println!("Loading {} from j-archive...", game_id);
+            // println!("Loading {} from j-archive...", game_id);
             let data = get_webpage(&url);
             // if game not in online database
             if data.contains("ERROR") {

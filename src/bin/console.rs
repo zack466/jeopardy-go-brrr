@@ -1,47 +1,58 @@
 use brrr::{self, Board, JeopardyQuestion};
 use crossterm;
-use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyModifiers, MouseEvent};
-use crossterm::{cursor, event, execute, terminal};
-use std::{error::Error, thread::sleep, time::Duration};
+use crossterm::event::{self, read, Event, KeyCode, KeyEvent, MouseEvent};
 use std::io;
-use std::sync::{self, mpsc};
+use std::sync::mpsc;
 use std::thread;
-use tui::backend::CrosstermBackend;
-use tui::layout::{Alignment, Constraint, Direction, Layout};
-use tui::style::{Color, Modifier, Style};
-use tui::text::{Span, Spans};
-use tui::widgets::{Wrap, Block, Clear, Borders, Cell, Paragraph, Row, Table, Tabs, Widget};
-use tui::{symbols::DOT, Terminal};
+use std::{error::Error, thread::sleep, time::Duration};
+use tui::{
+    backend::CrosstermBackend,
+    layout::{Alignment, Constraint, Direction, Layout},
+    style::{Color, Modifier, Style},
+    text::{Span, Spans},
+    widgets::{Block, Borders, Clear, Paragraph, Wrap},
+    Terminal,
+};
 
 type TERM = Terminal<CrosstermBackend<io::Stdout>>;
 
-fn game_selection(prompt: &str, terminal: &mut TERM, key_rx: &mpsc::Receiver<KeyEvent>) -> Result<Option<usize>, Box<dyn Error>> {
+fn game_selection(
+    prompt: &str,
+    terminal: &mut TERM,
+    key_rx: &mpsc::Receiver<KeyEvent>,
+) -> Result<Option<usize>, Box<dyn Error>> {
     let mut input = String::new();
     loop {
         terminal.draw(|f| {
             let chunks = Layout::default()
-                .constraints([
-                             Constraint::Percentage(20),
-                             Constraint::Percentage(60),
-                             Constraint::Percentage(20),
-                ].as_ref())
+                .constraints(
+                    [
+                        Constraint::Percentage(20),
+                        Constraint::Percentage(60),
+                        Constraint::Percentage(20),
+                    ]
+                    .as_ref(),
+                )
                 .direction(Direction::Horizontal)
                 .split(f.size());
             {
                 let chunks = Layout::default()
-                    .constraints([
-                                 Constraint::Percentage(30),
-                                 Constraint::Percentage(40),
-                                 Constraint::Percentage(30),
-                    ].as_ref())
+                    .constraints(
+                        [
+                            Constraint::Percentage(30),
+                            Constraint::Percentage(40),
+                            Constraint::Percentage(30),
+                        ]
+                        .as_ref(),
+                    )
                     .split(chunks[1]);
                 let prompt = Paragraph::new(vec![
-                                            Spans::from(Span::from("Enter game id:")),
-                                            Spans::from(Span::from(prompt)),
-                                            Spans::from(Span::from(&input[..]))
+                    Spans::from(Span::from("Enter game id:")),
+                    Spans::from(Span::from(prompt)),
+                    Spans::from(Span::from(&input[..])),
                 ])
-                    .block(Block::default().borders(Borders::ALL))
-                    .alignment(Alignment::Center);
+                .block(Block::default().borders(Borders::ALL))
+                .alignment(Alignment::Center);
                 f.render_widget(prompt, chunks[1]);
             }
         })?;
@@ -49,7 +60,7 @@ fn game_selection(prompt: &str, terminal: &mut TERM, key_rx: &mpsc::Receiver<Key
             match event.code {
                 KeyCode::Char('q') => {
                     return Ok(None);
-                },
+                }
                 KeyCode::Enter => {
                     break;
                 }
@@ -76,7 +87,6 @@ struct Coords {
 
 struct GameState {
     answered: [[bool; 6]; 5],
-    input_box: String,
     selected: Coords,
 }
 
@@ -99,7 +109,6 @@ impl Default for GameState {
     fn default() -> Self {
         GameState {
             answered: [[false; 6]; 5],
-            input_box: String::from("Hello there"),
             selected: Coords { x: 0, y: 0 },
         }
     }
@@ -146,7 +155,7 @@ fn display_board(
             let title = Paragraph::new(title)
                 .block(Block::default().borders(Borders::ALL))
                 .style(Style::default().add_modifier(Modifier::BOLD))
-                .wrap(Wrap {trim: false})
+                .wrap(Wrap { trim: false })
                 .alignment(Alignment::Center);
             f.render_widget(title, chunks[0]);
             for j in 0..5 {
@@ -161,7 +170,7 @@ fn display_board(
                 };
                 let text = if state.selected.x == i && state.selected.y == j {
                     Paragraph::new(text)
-                        .wrap(Wrap {trim: false})
+                        .wrap(Wrap { trim: false })
                         .block(
                             Block::default()
                                 .borders(Borders::ALL)
@@ -170,7 +179,7 @@ fn display_board(
                         .alignment(Alignment::Center)
                 } else {
                     Paragraph::new(text)
-                        .wrap(Wrap {trim: false})
+                        .wrap(Wrap { trim: false })
                         .block(Block::default().borders(Borders::ALL))
                         .alignment(Alignment::Center)
                 };
@@ -184,16 +193,30 @@ fn display_board(
 fn render_textbox(text: &str, terminal: &mut TERM) -> crossterm::Result<()> {
     terminal.draw(move |f| {
         let chunks = Layout::default()
-            .constraints([Constraint::Percentage(15), Constraint::Percentage(70), Constraint::Percentage(15)].as_ref())
+            .constraints(
+                [
+                    Constraint::Percentage(15),
+                    Constraint::Percentage(70),
+                    Constraint::Percentage(15),
+                ]
+                .as_ref(),
+            )
             .split(f.size());
         {
             let chunks = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(15), Constraint::Percentage(70), Constraint::Percentage(15)].as_ref())
+                .constraints(
+                    [
+                        Constraint::Percentage(15),
+                        Constraint::Percentage(70),
+                        Constraint::Percentage(15),
+                    ]
+                    .as_ref(),
+                )
                 .split(chunks[1]);
             let text = Paragraph::new(text)
                 .block(Block::default().borders(Borders::ALL))
-                .wrap(Wrap {trim: false})
+                .wrap(Wrap { trim: false })
                 .alignment(Alignment::Center);
             f.render_widget(Clear, chunks[1]);
             f.render_widget(text, chunks[1]);
@@ -202,7 +225,12 @@ fn render_textbox(text: &str, terminal: &mut TERM) -> crossterm::Result<()> {
     Ok(())
 }
 
-fn display_clue(question: &JeopardyQuestion, terminal: &mut TERM, state: &mut GameState, key_rx: &mpsc::Receiver<KeyEvent>) -> crossterm::Result<GameResult> {
+fn display_clue(
+    question: &JeopardyQuestion,
+    terminal: &mut TERM,
+    state: &mut GameState,
+    key_rx: &mpsc::Receiver<KeyEvent>,
+) -> crossterm::Result<GameResult> {
     loop {
         render_textbox(question.clue(), terminal)?;
         if let Ok(event) = key_rx.recv() {
@@ -210,11 +238,11 @@ fn display_clue(question: &JeopardyQuestion, terminal: &mut TERM, state: &mut Ga
                 KeyCode::Enter => {
                     state.answered[state.selected.y][state.selected.x] = true;
                     break;
-                },
+                }
                 KeyCode::Char('q') => {
                     break;
-                },
-                _ => { }
+                }
+                _ => {}
             }
         }
     }
@@ -224,14 +252,14 @@ fn display_clue(question: &JeopardyQuestion, terminal: &mut TERM, state: &mut Ga
             match event.code {
                 KeyCode::Enter => {
                     break;
-                },
+                }
                 KeyCode::Char('q') => {
                     return Ok(GameResult::Quit);
-                },
+                }
                 KeyCode::Delete => {
                     break;
                 }
-                _ => { }
+                _ => {}
             }
         }
     }
@@ -255,31 +283,36 @@ fn play_board(
         if let Ok(event) = key_rx.recv() {
             match event.code {
                 KeyCode::Enter => {
-                    match display_clue(&board[state.selected.y][state.selected.x], terminal, state, key_rx) {
-                        Ok(GameResult::Continue) => {},
+                    match display_clue(
+                        &board[state.selected.y][state.selected.x],
+                        terminal,
+                        state,
+                        key_rx,
+                    ) {
+                        Ok(GameResult::Continue) => {}
                         Ok(GameResult::Quit) => return Ok(GameResult::Quit),
                         Err(e) => return Err(e),
                     }
-                },
+                }
                 KeyCode::Char('q') => {
                     return Ok(GameResult::Quit);
-                },
+                }
                 KeyCode::Up => {
                     state.up();
-                },
+                }
                 KeyCode::Down => {
                     state.down();
-                },
+                }
                 KeyCode::Left => {
                     state.left();
-                },
+                }
                 KeyCode::Right => {
                     state.right();
-                },
+                }
                 KeyCode::Char(' ') => {
                     break;
                 }
-                _ => { }
+                _ => {}
             }
         }
     }
@@ -298,35 +331,47 @@ fn mainloop(terminal: &mut TERM, key_rx: &mpsc::Receiver<KeyEvent>) -> Result<()
             Err(_) => {
                 msg = "Invalid game id";
                 continue;
-            }, // parse or input error
+            } // parse or input error
         };
         let game_data = match brrr::get_game_data(game_id) {
             Some(x) => x,
             None => {
                 msg = "Game not found";
                 continue;
-            }, // game not found
+            } // game not found
         };
 
         let (all_categories, board_1, board_2, final_jeopardy) = game_data;
 
-        match play_board(&all_categories[..6], &board_1, terminal, &mut state, &key_rx) {
+        match play_board(
+            &all_categories[..6],
+            &board_1,
+            terminal,
+            &mut state,
+            &key_rx,
+        ) {
             Ok(GameResult::Continue) => {
                 // continues
-            },
+            }
             Ok(GameResult::Quit) => {
                 break;
-            },
+            }
             _ => break,
         }
 
-        match play_board(&all_categories[6..12], &board_2, terminal, &mut state, &key_rx) {
+        match play_board(
+            &all_categories[6..12],
+            &board_2,
+            terminal,
+            &mut state,
+            &key_rx,
+        ) {
             Ok(GameResult::Continue) => {
                 // continues
-            },
+            }
             Ok(GameResult::Quit) => {
                 break;
-            },
+            }
             _ => break,
         }
 

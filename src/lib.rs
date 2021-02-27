@@ -1,10 +1,10 @@
 use curl::easy::Easy;
 use regex::Regex;
+use std::collections::hash_map::DefaultHasher;
 use std::fs::{self, File};
+use std::hash::{Hash, Hasher};
 use std::io;
 use std::io::prelude::*;
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher,};
 
 #[macro_use]
 extern crate lazy_static;
@@ -80,8 +80,8 @@ fn cache_write(url: &String, data: &String) {
 pub struct JeopardyQuestion {
     clue: String,
     answer: String,
-    x: usize,     // num category from left to right
-    y: usize,     // num question going down
+    x: usize, // num category from left to right
+    y: usize, // num question going down
     value: usize,
 }
 
@@ -191,7 +191,7 @@ pub fn get_game_data(game_id: usize) -> Option<Game> {
         Some(data) => {
             // println!("Loading {} from cache...", game_id);
             data
-        },
+        }
         None => {
             // respectful web scraping etiquette
             // std::thread::sleep(std::time::Duration::from_secs(20));
@@ -221,6 +221,3 @@ pub fn get_game_data(game_id: usize) -> Option<Game> {
 
     return Some((categories, board_1, board_2, final_jeopardy));
 }
-
-// TODO: refactor for error handling
-// TODO: ability to serialize data as JSON/database or some other format

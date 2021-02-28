@@ -6,7 +6,11 @@ This tool provides both a back-end for pulling jeopardy games from j-archive and
 - `cargo run --bin console` will bring up the TUI.
 - Enter a game id, and the jeopardy game will be loaded from j-archive.
 - Use arrow keys to move your selection, enter to choose, and space to move on to the next round.
+- Use 'q' to quit
 - Have fun!
+
+![Jeopardy board](./jeopardy.png)
+J-archive game id: 1234
 
 ## TODO
 - final jeopardy
